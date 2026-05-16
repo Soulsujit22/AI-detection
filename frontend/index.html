@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Detection Tool</title>
+    <style>
+        :root {
+            --surface: rgba(255, 255, 255, 0.92);
+            --surface-strong: rgba(255, 255, 255, 1);
+            --primary: #5b5bff;
+            --primary-dark: #3848d2;
+            --accent: #ff5b8a;
+            --text: #172b4d;
+            --muted: #586586;
+            --success: #1f8d4d;
+            --warning: #b66c00;
+            --shadow: 0 28px 80px rgba(34, 49, 120, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at top left, rgba(91, 91, 255, 0.18), transparent 32%),
+                        radial-gradient(circle at bottom right, rgba(255, 91, 138, 0.16), transparent 28%),
+                        #f3f6ff;
+        }
+
+        .page {
+            width: min(1200px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 32px 0 48px;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 32px;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .hero h1 {
+            margin: 0 0 16px;
+            font-size: clamp(2.4rem, 3.4vw, 4rem);
+            line-height: 1.05;
+        }
+
+        .hero p {
+            margin: 0 0 24px;
+            max-width: 34rem;
+            color: var(--muted);
+            font-size: 1.05rem;
+            line-height: 1.8;
+        }
+
+        .hero .hero-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.75);
+            border: 1px solid rgba(255,255,255,0.9);
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-size: 0.95rem;
+            color: var(--text);
+            box-shadow: var(--shadow);
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid rgba(255,255,255,0.95);
+            border-radius: 28px;
+            padding: 32px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .upload-section {
+            position: relative;
+            margin: 0 0 24px;
+            padding: 32px 24px;
+            border: 2px dashed rgba(91, 91, 255, 0.45);
+            border-radius: 24px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(91,91,255,0.05), rgba(255,255,255,0.9));
+            transition: border-color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
+            cursor: pointer;
+        }
+
+        .upload-section:hover,
+        .upload-section.dragover {
+            border-color: var(--primary-dark);
+            background: rgba(91,91,255,0.08);
+            transform: translateY(-2px);
+        }
+
+        .upload-section p {
+            margin: 0;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .upload-section small {
+            color: var(--muted);
+        }
+
+        input[type="file"] {
+            opacity: 0;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        button {
+            border: none;
+            border-radius: 999px;
+            padding: 16px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            box-shadow: 0 18px 36px rgba(91, 91, 255, 0.18);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 22px 42px rgba(91, 91, 255, 0.22);
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .download-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 12px;
+            padding: 14px 24px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.96);
+            color: var(--text);
+            text-decoration: none;
+            border: 1px solid rgba(91, 91, 255, 0.12);
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .download-button:hover {
+            transform: translateY(-2px);
+            background: rgba(255,255,255,1);
+            border-color: rgba(91, 91, 255, 0.24);
+        }
+
+        .download-button:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 24px;
+            padding: 28px;
+            border-radius: 24px;
+            display: none;
+            border: 1px solid rgba(91, 91, 255, 0.15);
+            background: rgba(255,255,255,0.92);
+            box-shadow: var(--shadow);
+        }
+
+        .result h3 {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .result p {
+            margin: 12px 0;
+            line-height: 1.7;
+        }
+
+        .result.success {
+            border-color: rgba(31,142,77,0.18);
+        }
+
+        .result.warning {
+            border-color: rgba(182,108,0,0.18);
+        }
+
+        .result.uncertain {
+            border-color: rgba(91, 91, 255, 0.18);
+        }
+
+        .result-card {
+            margin-bottom: 16px;
+            padding: 20px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(91, 91, 255, 0.12);
+            box-shadow: 0 18px 30px rgba(34, 49, 120, 0.06);
+        }
+
+        .result-card.success {
+            border-color: rgba(31,142,77,0.2);
+        }
+
+        .result-card.warning {
+            border-color: rgba(182,108,0,0.22);
+        }
+
+        .result-card.uncertain {
+            border-color: rgba(91, 91, 255, 0.22);
+            background: rgba(243, 243, 255, 0.95);
+        }
+
+        .explanation-box {
+            border-left: 4px solid #5b5bff;
+            padding: 16px;
+            margin: 16px 0;
+            background: rgba(91, 91, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .explanation-box strong {
+            color: var(--primary);
+        }
+
+        .explanation-box ul {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        .explanation-box li {
+            margin: 8px 0;
+        }
+
+        .visualization-container {
+            margin: 20px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(91, 91, 255, 0.15);
+            background: white;
+        }
+
+        .visualization-container img {
+            width: 100%;
+            display: block;
+            max-height: 600px;
+            object-fit: contain;
+        }
+
+        .visualization-note {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-top: 12px;
+            font-style: italic;
+        }
+
+        .original-image-container {
+            margin: 16px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(91, 91, 255, 0.15);
+            background: white;
+            text-align: center;
+        }
+
+        .original-image-container img {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            display: inline-block;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .metric-card {
+            background: rgba(91, 91, 255, 0.05);
+            border: 1px solid rgba(91, 91, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .metric-card .metric-label {
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .metric-card .metric-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 24px 0 8px;
+            color: var(--muted);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 14px;
+            background: rgba(91, 91, 255, 0.08);
+            border-radius: 999px;
+            overflow: hidden;
+            display: none;
+            margin-top: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .feature-card {
+            background: rgba(255,255,255,0.78);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.9);
+            box-shadow: 0 18px 40px rgba(34, 49, 120, 0.06);
+        }
+
+        .feature-card h4 {
+            margin: 0 0 10px;
+        }
+
+        .feature-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        @media (max-width: 850px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .page {
+                padding: 24px 0 36px;
+            }
+            .card {
+                padding: 24px;
+            }
+            .upload-section {
+                padding: 28px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <section class="hero">
+            <div>
+                <p class="badge">AI-powered manipulation detection</p>
+                <h1>Detect AI-generated and manipulated images & videos</h1>
+                <p>Upload media and get fast, easy-to-read AI authenticity results. This tool uses free open-source detection models to highlight suspicious content.</p>
+                <div class="hero-badges">
+                    <span class="badge">Real-time analysis</span>
+                    <span class="badge">Image + video support</span>
+                    <span class="badge">No API key needed</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="upload-section" id="uploadSection">
+                            <p><strong>Drag & drop</strong> your images or videos here</p>
+                    <p>or <strong>click</strong> to browse files.</p>
+                    <input type="file" id="fileInput" accept="image/*,video/*" multiple>
+                    <p><small>Supported formats: JPG, PNG, MP4, AVI</small></p>
+                </div>
+                <div class="button-group">
+                    <button id="analyzeBtn" disabled>Analyze Files</button>
+                    <a class="download-button" href="/download-results">Download CSV</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="loading" id="loading">
+                <p>Analyzing file... This may take a few moments.</p>
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="result" id="result"></div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Trusted Detection</h4>
+                    <p>Uses open-source AI classifiers to identify deepfake and synthetic media.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Clean Interface</h4>
+                    <p>Easy upload experience with clear results, confidence scores, and model labels.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Secure Processing</h4>
+                    <p>Files are sent only to your local backend server and processed without external cloud storage.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loading = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        
+        let selectedFiles = [];
+        
+        // Drag and drop functionality
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files);
+            }
+        });
+        
+        uploadSection.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files);
+            }
+        });
+        
+        function handleFileSelect(files) {
+            selectedFiles = Array.from(files);
+            analyzeBtn.disabled = false;
+            analyzeBtn.textContent = `Analyze ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}`;
+            resultDiv.style.display = 'none';
+        }
+        
+        analyzeBtn.addEventListener('click', async () => {
+            if (selectedFiles.length === 0) return;
+            
+            loading.style.display = 'block';
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            resultDiv.style.display = 'none';
+            analyzeBtn.disabled = true;
+            
+            try {
+                const imageFiles = selectedFiles.filter(file => file.type.startsWith('image/'));
+                const videoFiles = selectedFiles.filter(file => file.type.startsWith('video/'));
+                
+                const allResults = [];
+                
+                // Process images
+                if (imageFiles.length > 0) {
+                    const formData = new FormData();
+                    imageFiles.forEach(file => formData.append('files', file));
+                    
+                    const baseUrl = `${window.location.protocol}//${window.location.host}`;
+                    
+                    // Simulate progress
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += Math.random() * 15;
+                        if (progress > 90) progress = 90;
+                        progressFill.style.width = progress + '%';
+                    }, 500);
+                    
+                    const response = await fetch(`${baseUrl}/detect/image`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    clearInterval(progressInterval);
+                    progressFill.style.width = '100%';
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    allResults.push(...result.results);
+                }
+                
+                // Process videos
+                if (videoFiles.length > 0) {
+                    const formData = new FormData();
+                    videoFiles.forEach(file => formData.append('files', file));
+                    
+                    const baseUrl = `${window.location.protocol}//${window.location.host}`;
+                    
+                    const response = await fetch(`${baseUrl}/detect/video`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    allResults.push(...result.results);
+                }
+                
+                displayResult(allResults);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                displayResult([{ error: 'An error occurred while analyzing the files. Please try again.' }]);
+            } finally {
+                loading.style.display = 'none';
+                progressBar.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        });
+        
+        function displayResult(results) {
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.innerHTML = '';
+            
+            if (!Array.isArray(results)) {
+                results = [results];
+            }
+            
+            const cards = results.map((result) => {
+                if (result.error) {
+                    return `<div class="result-card warning"><h3>Error</h3><p>${result.error}</p></div>`;
+                }
+                const status = result.combined_status || result.status || (result.is_ai_generated ? 'AI Generated/Manipulated' : 'Likely Real');
+                const stateClass = status === 'AI Generated/Manipulated' ? 'warning' : status === 'Likely Real' ? 'success' : 'uncertain';
+                const confidenceText = (result.confidence !== undefined && result.confidence !== null)
+                    ? `${(result.confidence * 100).toFixed(2)}%`
+                    : 'N/A';
+                const effConfidenceText = (result.efficientnet_confidence !== undefined && result.efficientnet_confidence !== null)
+                    ? `${(result.efficientnet_confidence * 100).toFixed(2)}%`
+                    : 'N/A';
+                let html = `<div class="result-card ${stateClass}">`;
+                html += `<h3>${result.filename}</h3>`;
+                html += `<p><strong>Final Result:</strong> ${status}</p>`;
+                html += `<p><strong>Deepfake Model:</strong> ${result.detected_label || 'Unknown'} (${confidenceText})</p>`;
+                html += `<p><strong>EfficientNet:</strong> ${result.efficientnet_label || 'Unknown'} (${effConfidenceText})</p>`;
+                html += `<p><strong>Combined Verdict:</strong> ${status}</p>`;
+                
+                // Add original image if available
+                if (result.original_image) {
+                    html += `
+                    <div class="original-image-container">
+                        <p style="margin: 12px 0 0 0; font-size: 0.9rem; color: var(--muted);"><strong>Uploaded Image:</strong></p>
+                        <img src="${result.original_image}" alt="Original Uploaded Image" title="Your uploaded image">
+                    </div>
+                    `;
+                }
+                
+                // Add metrics grid if available
+                if (result.metrics && Object.keys(result.metrics).length > 0) {
+                    html += `<div class="metrics-grid">`;
+                    const metricsToShow = [
+                        { key: 'avg_saturation', label: 'Saturation', format: v => v.toFixed(1) + '%' },
+                        { key: 'color_consistency', label: 'Consistency', format: v => v.toFixed(1) + '%' },
+                        { key: 'edge_density', label: 'Edge Density', format: v => v.toFixed(2) + '%' },
+                        { key: 'brightness', label: 'Brightness', format: v => Math.round(v) + '/255' },
+                        { key: 'contrast', label: 'Contrast', format: v => v.toFixed(1) },
+                        { key: 'high_freq_content', label: 'High Freq', format: v => v.toFixed(1) + '%' }
+                    ];
+                    
+                    metricsToShow.forEach(m => {
+                        if (result.metrics[m.key] !== undefined) {
+                            const value = result.metrics[m.key];
+                            html += `
+                            <div class="metric-card">
+                                <div class="metric-label">${m.label}</div>
+                                <div class="metric-value">${m.format(value)}</div>
+                            </div>
+                            `;
+                        }
+                    });
+                    html += `</div>`;
+                }
+                
+                // Add explanation section if available
+                if (result.explanation) {
+                    html += result.explanation;
+                }
+                
+                // Add visualization if available
+                if (result.visualization) {
+                    html += `
+                    <div class="visualization-container">
+                        <img src="${result.visualization}" alt="Detection Heatmap">
+                    </div>
+                    <p class="visualization-note">
+                        <strong>How to read this visualization:</strong> The right panel shows a heatmap overlay on your image. 
+                        Red/warm areas indicate regions where the model detected anomalies suggesting potential manipulation. 
+                        Green/cool areas appear more consistent with natural images.
+                    </p>
+                    `;
+                }
+                
+                if (result.frames_analyzed !== undefined) {
+                    html += `<p><strong>Frames Analyzed:</strong> ${result.frames_analyzed}</p>`;
+                    html += `<p><strong>Fake Frames:</strong> ${result.fake_frames} | <strong>Real Frames:</strong> ${result.real_frames}</p>`;
+                }
+                if (status === 'Uncertain') {
+                    html += `<p><em>Low confidence or disagreement between models. Review this manually.</em></p>`;
+                } else {
+                    html += `<p><em>Note: This result is not 100% accurate.</em></p>`;
+                }
+                html += `</div>`;
+                return html;
+            }).join('');
+            resultDiv.innerHTML = cards;
+        }
+    </script>
+</body>
+</html>
